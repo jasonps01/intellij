@@ -31,6 +31,8 @@ import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.RuleType;
 import com.google.idea.blaze.base.sync.workspace.WorkspaceHelper;
 import com.google.idea.blaze.golang.sync.BlazeGoLibrary;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -97,22 +99,30 @@ class BlazeGoPackage extends GoPackage {
    * {@link BlazeGoImportResolver#getGoPackageMap(Project)}.
    */
   void refreshFiles() {
-    VirtualFileSystemProvider.getInstance()
-        .getSystem()
-        .refreshIoFiles(
-            files,
-            true, // async
-            false, // recursive
-            () -> {
-              ConcurrentMap<String, Optional<BlazeGoPackage>> goPackageMap =
-                  BlazeGoImportResolver.getGoPackageMap(getProject());
-              if (goPackageMap == null) {
-                return;
-              }
-              BlazeGoPackage goPackage =
-                  new BlazeGoPackage(getProject(), importPath, isTestPackage(), label, files);
-              goPackageMap.put(importPath, Optional.of(goPackage));
-            });
+    ApplicationManager.getApplication()
+        .invokeLater( // need to be on EDT, since the async below is a lie
+            () ->
+                // THE async IS A LIE!
+                // The VirtualFiles are still found synchronously,
+                // they're just refreshed asynchronously after that.
+                VirtualFileSystemProvider.getInstance()
+                    .getSystem()
+                    .refreshIoFiles(
+                        files,
+                        true, // async
+                        false, // recursive
+                        () -> {
+                          ConcurrentMap<String, Optional<BlazeGoPackage>> goPackageMap =
+                              BlazeGoImportResolver.getGoPackageMap(getProject());
+                          if (goPackageMap == null) {
+                            return;
+                          }
+                          BlazeGoPackage goPackage =
+                              new BlazeGoPackage(
+                                  getProject(), importPath, isTestPackage(), label, files);
+                          goPackageMap.put(importPath, Optional.of(goPackage));
+                        }),
+            ModalityState.NON_MODAL);
   }
 
   private static VirtualFile[] getDirectories(Collection<File> files) {
