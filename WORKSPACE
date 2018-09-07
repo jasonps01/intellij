@@ -106,13 +106,9 @@ new_http_archive(
         "    visibility = ['//visibility:public'],",
         ")",
     ]),
-<<<<<<< HEAD
-    sha256 = "5a54c3823fc591ae65ea4fdf1e6e6a1c2704025b3c052e9d2a1695f5cf6f0e0b",
-    url = "https://plugins.jetbrains.com/files/7322/48089/python-ce-2018.2.182.3684.101.zip",
-=======
+
     sha256 = "863d8da8a6e1d2589178ed2ff657d935ed2536d26bde5ebd7785ca16ce0b3093",
     url = "https://plugins.jetbrains.com/files/7322/48707/python-ce-2018.2.182.3911.36.zip",
->>>>>>> upstream/master
 )
 
 # Go plugin for IntelliJ UE. Required at compile-time for Bazel integration.
